@@ -19,10 +19,13 @@
   "author": "GitHub",
   "license": "CC0-1.0",
   "devDependencies": {
-    "electron": "^4.1.3"
+    "electron": "^3"
   },
   "dependencies": {
+    "@byted-light/bcloud": "^1.0.6",
+    "bootstrap": "^3.4.1",
     "express": "^4.16.4",
+    "jquery": "^3.4.0",
     "socket.io": "^2.2.0"
   }
 }

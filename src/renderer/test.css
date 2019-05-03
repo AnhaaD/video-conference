@@ -1,0 +1,68 @@
+.container {
+    width: 1200px;
+    height: 640px;
+    display: flex;
+}
+
+.container .span3 {
+    width: 30%;
+    height: 100%;
+    background: red;
+    /* display: none; */
+}
+
+.container .span7 {
+    width: 70%;
+    height: 100%;
+    background: green;
+    display: inline-block;
+}
+
+.ag-container {
+    height: 95%;
+    margin: 0 auto;
+    flex-grow: 1;
+    /* background: black; */
+}
+
+/* video item rendering style */
+#ag-canvas {
+    display: grid;
+    grid-gap: 10px;
+    align-items: center;
+    justify-items: center;
+    grid-template-rows: repeat(12, auto);
+    grid-template-columns: repeat(24, auto);
+}
+
+.ag-item :first-child {
+    border-radius: 6px;
+    
+}
+.ag-item {
+    border-radius: 6px;
+    border: 2px #00B6ED solid;
+    /* background: url('../../assets/images/avatar.png') center no-repeat; */
+    height: 100%;
+    width: 100%;
+}
+
+#ag-item-1 video {
+    height: 100%!important;
+    width: 100%!important;
+    position: absolute!important;
+    right: 0!important;
+    top: 0!important;
+}
+
+.btn-group {
+    height: 5%;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    background: transparent;
+}
+
+.btn.btn-default {
+    display: inline-flex;
+}

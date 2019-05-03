@@ -3,11 +3,31 @@
 <head>
 <title>Agora Web Sample</title>
 <link rel="stylesheet" href="vendor/bootstrap.min.css">
+<link href="../renderer/test.css" rel="stylesheet">
 <script src="AgoraRTCSDK-2.6.0.js"></script>
 <script src="vendor/jquery.js"></script>
 </head>
 
 <body>
+    <div class="container">
+        <div class="span7">
+          <!--主体内容-->
+          <div class="ag-container" id="ag-canvas"></div>
+          <div class="btn-group" role="group" aria-label="...">
+              <button type="button" class="btn btn-default">静音</button>
+              <button type="button" class="btn btn-default">停止视频</button>
+              <button type="button" class="btn btn-default">管理参会者</button>
+              <button type="button" class="btn btn-default">屏幕共享</button>
+              <button type="button" class="btn btn-default">文件共享</button>
+              <button type="button" class="btn btn-default">聊天</button>
+              <button type="button" class="btn btn-default">离开会议</button>
+          </div>
+        </div>
+        <div class="span3">
+            <!--边栏内容-->
+        </div>
+    </div>
+
 <div id="div_device" class="panel panel-default">
 <div class="select">
 <label for="audioSource">Audio source: </label><select id="audioSource"></select>
@@ -28,6 +48,17 @@ Channel: <input id="channel" type="text" value="1000" size="4"></input><br>
 <button id="unmute" class="btn btn-primary" onclick="unmute()">Unmute</button>
 <button id="enable_video" class="btn btn-primary" onclick="enableVideo()">EnableVideo</button>
 <button id="unable_video" class="btn btn-primary" onclick="unableVideo()">UnableVideo</button>
+<input id="message" type="text"></input> <button onclick="sendMessage(message.value)">send</button><br>
+
+<!-- <form name="upload_file"
+onsubmit="return uploadFile(upload_file.fname.value)">
+
+What is your name?<br />
+<input type="text" name="fname" />
+<input type="submit" value="Submit" />
+
+</form> -->
+
 </div>
 </div>
 
@@ -53,6 +84,7 @@ Channel: <input id="channel" type="text" value="1000" size="4"></input><br>
 <script language="javascript">
 
 const apis = require('../vc-core/apis.js').apis;
+const customRender = require('./utils/Render.js').customRender;
 
 if(!AgoraRTC.checkSystemRequirements()) {
   alert("Your browser does not support WebRTC!");
@@ -66,12 +98,12 @@ if(!AgoraRTC.checkSystemRequirements()) {
 // AgoraRTC.Logger.setLogLevel(AgoraRTC.Logger.DEBUG);
 
 /* simulated data to proof setLogLevel() */
-AgoraRTC.Logger.error('this is error');
-AgoraRTC.Logger.warning('this is warning');
-AgoraRTC.Logger.info('this is info');
-AgoraRTC.Logger.debug('this is debug');
+// AgoraRTC.Logger.error('this is error');
+// AgoraRTC.Logger.warning('this is warning');
+// AgoraRTC.Logger.info('this is info');
+// AgoraRTC.Logger.debug('this is debug');
 
-var client, localStream, camera, microphone;
+var client, localStream, camera, microphone, streamList = [];
 
 var audioSelect = document.querySelector('select#audioSource');
 var videoSelect = document.querySelector('select#videoSource');
@@ -90,45 +122,46 @@ function join(room) {
   document.getElementById("leave").disabled = false;
   var channel_key = null;
 
-    client.join(null, room, null, function(uid) {
-      apis.joinRoom(uid, channel.value);
-      console.log("User " + uid + " join channel successfully");
+  client.join(null, room, null, function(uid) {
+    apis.joinRoom(room);
+    console.log("User " + uid + " join channel successfully");
 
-        camera = videoSource.value;
-        microphone = audioSource.value;
-        localStream = AgoraRTC.createStream({streamID: uid, audio: true, cameraId: camera, microphoneId: microphone, video: true, screen: false});
-        //localStream = AgoraRTC.createStream({streamID: uid, audio: false, cameraId: camera, microphoneId: microphone, video: false, screen: true, extensionId: 'minllpmhdgpndnkomcoccfekfegnlikg'});
-        if (document.getElementById("video").checked) {
-          localStream.setVideoProfile('720p_3');
-        }
+    camera = videoSource.value;
+    microphone = audioSource.value;
+    localStream = AgoraRTC.createStream({streamID: uid, audio: true, cameraId: camera, microphoneId: microphone, video: true, screen: false});
+    //localStream = AgoraRTC.createStream({streamID: uid, audio: false, cameraId: camera, microphoneId: microphone, video: false, screen: true, extensionId: 'minllpmhdgpndnkomcoccfekfegnlikg'});
+    if (document.getElementById("video").checked) {
+      localStream.setVideoProfile('720p_3');
+    }
 
-        // The user has granted access to the camera and mic.
-        localStream.on("accessAllowed", function() {
-          console.log("accessAllowed");
-        });
-
-        // The user has denied access to the camera and mic.
-        localStream.on("accessDenied", function() {
-          console.log("accessDenied");
-        });
-
-        localStream.init(function() {
-          console.log("getUserMedia successfully");
-          localStream.play('agora_local');
-
-          client.publish(localStream, function (err) {
-            console.log("Publish local stream error: " + err);
-          });
-
-          client.on('stream-published', function (evt) {
-            console.log("Publish local stream successfully");
-          });
-        }, function (err) {
-          console.log("getUserMedia failed", err);
-        });
-    }, function(err) {
-      console.log("Join channel failed", err);
+    // The user has granted access to the camera and mic.
+    localStream.on("accessAllowed", function() {
+      console.log("accessAllowed");
     });
+
+    // The user has denied access to the camera and mic.
+    localStream.on("accessDenied", function() {
+      console.log("accessDenied");
+    });
+
+    localStream.init(function() {
+      console.log("getUserMedia successfully");
+      // localStream.play('agora_local');
+      addStream(localStream);
+
+      client.publish(localStream, function (err) {
+        console.log("Publish local stream error: " + err);
+      });
+
+      client.on('stream-published', function (evt) {
+        console.log("Publish local stream successfully");
+      });
+    }, function (err) {
+      console.log("getUserMedia failed", err);
+    });
+  }, function(err) {
+    console.log("Join channel failed", err);
+  });
 
   channelKey = "";
   client.on('error', function(err) {
@@ -142,7 +175,6 @@ function join(room) {
     }
   });
 
-
   client.on('stream-added', function (evt) {
     var stream = evt.stream;
     console.log("New stream added: " + stream.getId());
@@ -155,24 +187,25 @@ function join(room) {
   client.on('stream-subscribed', function (evt) {
     var stream = evt.stream;
     console.log("Subscribe remote stream successfully: " + stream.getId());
-    if ($('div#video #agora_remote'+stream.getId()).length === 0) {
-      $('div#video').append('<div id="agora_remote'+stream.getId()+'" style="float:left;width:810px;height:607px;display:inline-block;"></div>');
-    }
-    stream.play('agora_remote' + stream.getId());
+    // if ($('div#video #agora_remote'+stream.getId()).length === 0) {
+    //   $('div#video').append('<div id="agora_remote'+stream.getId()+'" style="float:left;width:810px;height:607px;display:inline-block;"></div>');
+    // }
+    // stream.play('agora_remote' + stream.getId());
+    console.log('-------------sub----------' + stream.getId())
+    addStream(stream);
   });
 
   client.on('stream-removed', function (evt) {
     var stream = evt.stream;
-    stream.stop();
-    $('#agora_remote' + stream.getId()).remove();
+    removeStream(stream.getId());
     console.log("Remote stream is removed " + stream.getId());
+    
   });
 
   client.on('peer-leave', function (evt) {
     var stream = evt.stream;
     if (stream) {
-      stream.stop();
-      $('#agora_remote' + stream.getId()).remove();
+      removeStream(stream.getId());
       console.log(evt.uid + " leaved from this channel");
     }
   });
@@ -181,8 +214,19 @@ function join(room) {
 function leave() {
   document.getElementById("join").disabled = false;
   document.getElementById("leave").disabled = true;
+
+  ids = [];
+  streamList.forEach(stream => {
+    ids.push(stream.getId());
+  });
+  console.log(ids);
+
+  for (i = 0; i < ids.length; ++i) {
+    removeStream(ids[i]);
+  }
+
   client.leave(function () {
-    apis.leaveRoom('geshaoshan', channel.value);
+    apis.leaveRoom(channel.value);
     console.log("Leavel channel successfully");
   }, function (err) {
     console.log("Leave channel failed");
@@ -224,6 +268,35 @@ function getDevices() {
   });
 }
 
+function removeStream(id) {
+  streamList.map((item, index) => {
+      if (item.getId() === id) {
+          streamList[index].close()
+          $('#ag-item-'+id).remove()
+          streamList.splice(index, 1)            
+      }
+  })
+  customRender(streamList)
+}
+
+function addStream(stream, push=false) {
+    // let redundant = streamList.some(item => {
+    //     return item.getId() === stream.getId()
+    // })
+    // if (redundant) {
+    //     return
+    // }
+
+    for (i = 0; i < streamList.length; ++i) {
+      if (stream.getId() == streamList[i].getId()) {
+        return;
+      }
+    }
+    push ? streamList.push(stream) : streamList.unshift(stream)
+    
+    customRender(streamList)
+}
+
 function mute() {
   if (localStream.muteAudio()) {
     console.log('mute local audio success')
@@ -256,6 +329,25 @@ function unableVideo() {
   }
 }
 
+function sendMessage(message) {
+  apis.sendMessage(message);
+}
+
+function onMessage(message) {
+  console.log('a new message: ', message);
+}
+
+function uploadFile(filePath) {
+  console.log(filePath);
+  apis.uploadFile(filePath);
+  return true;
+}
+
+function onFile(url) {
+  console.log('a new file: ', url);
+}
+
+
 //audioSelect.onchange = getDevices;
 //videoSelect.onchange = getDevices;
 
@@ -267,7 +359,9 @@ var listener = {
   'mute': mute,
   'unmute': unmute,
   'enableVideo': enableVideo,
-  'unableVideo': unableVideo
+  'unableVideo': unableVideo,
+  'onMessage': onMessage,
+  'onFile': onFile
 };
 
 apis.login('geshaoshan', function(){
@@ -275,7 +369,7 @@ apis.login('geshaoshan', function(){
   createClient();
   apis.bindListener(listener);
   getDevices();
-  apis.test();
+  uploadFile('/Users/shaonge/projects/video-conference/src/vc-core/file.txt');
 }, function(){
   console.log('login fail');
 });
