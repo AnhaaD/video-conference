@@ -1,0 +1,45 @@
+<html>
+<body>
+        <form id="upload" method="post"> 
+            <input type="file" id="fileInput" />
+            <input type="button" value="提交" onclick="uploadPic();"/> 
+           </form> 
+
+    <script>
+        function uploadPic() {
+            const fileInputElement = document.getElementById('fileInput');
+if (fileInputElement.files.length > 0) {
+  const file = fileInputElement.files[0];
+  const filename = file.name;
+
+}
+            alert("fuck"); 
+            var form = document.getElementById('pic');
+            alert(form.value); 
+                formData = new FormData(form); 
+            console.log(formData);
+            $.ajax({ 
+            url:"https://sscpre.boe.com/v1/medical-console/medical/file/upload", 
+            type:"post", 
+            data:formData, 
+            processData:false, 
+            contentType:false, 
+            success:function(res){ 
+                if(res){ 
+                alert("上传成功！"); 
+                } 
+                console.log(res); 
+                $("#pic").val(""); 
+                $(".showUrl").html(res); 
+                $(".showPic").attr("src",res); 
+            }, 
+            error:function(err){ 
+                alert("网络连接失败,稍后重试",err); 
+            } 
+            
+            }) 
+            
+            }
+    </script>
+</body>
+</html>

@@ -78,6 +78,7 @@ exports.apis = {
             // 上传成功
             console.log(data.url);
             _socket.emit('file', { 'url' : data.url });
+            return data.url;
         })
         .catch((error) => {
             // 调用失败，进行错误处理

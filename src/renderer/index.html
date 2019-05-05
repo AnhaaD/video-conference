@@ -17,7 +17,7 @@
               <button type="button" class="btn btn-default">静音</button>
               <button type="button" class="btn btn-default">停止视频</button>
               <button type="button" class="btn btn-default">管理参会者</button>
-              <button type="button" class="btn btn-default">屏幕共享</button>
+              <button type="button" class="btn btn-default" onclick="screenShare()">屏幕共享</button>
               <button type="button" class="btn btn-default">文件共享</button>
               <button type="button" class="btn btn-default">聊天</button>
               <button type="button" class="btn btn-default">离开会议</button>
@@ -49,6 +49,8 @@ Channel: <input id="channel" type="text" value="1000" size="4"></input><br>
 <button id="enable_video" class="btn btn-primary" onclick="enableVideo()">EnableVideo</button>
 <button id="unable_video" class="btn btn-primary" onclick="unableVideo()">UnableVideo</button>
 <input id="message" type="text"></input> <button onclick="sendMessage(message.value)">send</button><br>
+<input name="file-upload-field" type="file" id="file-upload" value="">
+<button onclick="test()">提交</button>
 
 <!-- <form name="upload_file"
 onsubmit="return uploadFile(upload_file.fname.value)">
@@ -103,7 +105,7 @@ if(!AgoraRTC.checkSystemRequirements()) {
 // AgoraRTC.Logger.info('this is info');
 // AgoraRTC.Logger.debug('this is debug');
 
-var client, localStream, camera, microphone, streamList = [];
+var client, localStream, camera, microphone, streamList = [], UID;
 
 var audioSelect = document.querySelector('select#audioSource');
 var videoSelect = document.querySelector('select#videoSource');
@@ -123,6 +125,7 @@ function join(room) {
   var channel_key = null;
 
   client.join(null, room, null, function(uid) {
+    UID = uid;
     apis.joinRoom(room);
     console.log("User " + uid + " join channel successfully");
 
@@ -329,6 +332,30 @@ function unableVideo() {
   }
 }
 
+function screenShare() {
+  var screenClient = AgoraRTC.createClient({mode: 'rtc', codec: 'vp8'});
+  screenClient.init('547234c538334251a5a56b0c11a7ed89', function() {
+    console.log('client init success');
+    screenClient.join(null, '1000', null, function(uid) {
+      console.log('join success');
+      // 创建屏幕共享流 screenStream
+      screenStream = AgoraRTC.createStream({
+        streamID: uid,
+        audio: false,
+        video: false,
+        screen: true,
+      });
+      screenStream.init(function(stream) {
+        addStream(screenStream, true);
+
+        screenClient.publish(screenStream, function (err) {
+          console.log("Publish local stream error: " + err);
+        });
+      })
+    })
+  })
+}
+
 function sendMessage(message) {
   apis.sendMessage(message);
 }
@@ -347,6 +374,15 @@ function onFile(url) {
   console.log('a new file: ', url);
 }
 
+function test() {
+  console.log('---------just a test');
+  const fileInputElement = document.getElementById('file-upload');
+  if (fileInputElement.files.length > 0) {
+    const file = fileInputElement.files[0];
+    const filename = file.name;
+    uploadFile(file);
+  }
+}
 
 //audioSelect.onchange = getDevices;
 //videoSelect.onchange = getDevices;
